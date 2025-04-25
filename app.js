@@ -1,0 +1,216 @@
+// Główny skrypt aplikacji
+import {renderHome} from './views/home.js';
+import {renderArguments} from './views/arguments.js';
+import {renderGallery} from './views/gallery.js';
+import {renderStats} from './views/stats.js';
+import {renderPetition} from './views/petition.js';
+import {renderPetitionDataManager} from './views/data.js';
+
+
+//Stan aplikacji
+const state = {
+    activePage: 'home',
+    navigationHistory: [],
+    signers: [],
+    disasters: []
+};
+
+// Główny element do renderowania contentu
+const mainContent = document.getElementById('main-content');
+
+// Nawigacja
+const navLinks = document.querySelectorAll('.nav-link');
+
+// Ładowanie danych o katastrofach
+async function loadDisasters() {
+    try {
+        const response = await fetch('data/disasters.json');
+        if (!response.ok) {
+            throw new Error('Problem z pobraniem danych');
+        }
+        state.disasters = await response.json();
+        return state.disasters;
+    } catch (error) {
+        console.error('Błąd podczas ładowania danych:', error);
+        // Failover na dane przykładowe
+        return getExampleDisasters();
+    }
+}
+
+// Przykładowe dane jeśli fetch się nie powiedzie
+function getExampleDisasters() {
+    return [
+        {
+            "id": 1,
+            "name": "Deepwater Horizon",
+            "location": "Zatoka Meksykańska",
+            "date": "2010-04-20",
+            "description": "Wybuch platformy wiertniczej Deepwater Horizon doprowadził do jednego z największych wycieków ropy w historii, uwalniając około 4,9 miliona baryłek ropy do Zatoki Meksykańskiej.",
+            "impactDescription": "Katastrofa spowodowała śmierć 11 osób, zniszczenie ekosystemów morskich, straty w rybołówstwie i turystyce oraz długotrwałe skutki dla zdrowia mieszkańców wybrzeża.",
+            "image": "https://via.placeholder.com/600x400?text=Deepwater+Horizon",
+            "latitude": 28.7381,
+            "longitude": -88.3657,
+            "impactScale": 9,
+            "oilSpilled": 4900000,
+            "remedialAction": "Wyciek ropy z platformy Deepwater Horizon doprowadził do szeroko zakrojonych działań naprawczych, w tym do natychmiastowej reakcji przy użyciu zapór i środków dyspergujących oraz długoterminowych projektów naprawczych, których celem było przywrócenie ekosystemów i naprawa szkód gospodarczych."
+        },
+        {
+            "id": 2,
+            "name": "Exxon Valdez",
+            "location": "Cieśnina Księcia Williama, Alaska",
+            "date": "1989-03-24",
+            "description": "Tankowiec Exxon Valdez osiadł na mieliźnie, powodując wyciek około 257,000 baryłek ropy naftowej u wybrzeży Alaski.",
+            "impactDescription": "Wyciek spowodował śmierć tysięcy zwierząt morskich, zniszczył lokalne rybołówstwo i do dziś ma wpływ na ekosystem regionu.",
+            "image": "https://via.placeholder.com/600x400?text=Exxon+Valdez",
+            "latitude": 60.8283,
+            "longitude": -146.8669,
+            "impactScale": 7,
+            "oilSpilled": 257000,
+            "remedialAction": "Działania naprawcze podjęte po wycieku ropy z tankowca Exxon Valdez w 1989 r. obejmowały zbieranie ropy z powierzchni wody, stosowanie dyspergatorów w celu rozłożenia ropy, mycie zaolejonych plaż gorącą wodą i wykorzystanie technik bioremediacji, takich jak nawożenie, w celu przyspieszenia naturalnej degradacji ropy przez bakterie."
+        },
+        {
+            "id": 3,
+            "name": "Nowruz Oil Field",
+            "location": "Zatoka Perska",
+            "date": "1983-02-10",
+            "description": "Podczas wojny iracko-irańskiej doszło do wycieku z platformy wiertniczej Nowruz, który trwał prawie 8 miesięcy.",
+            "impactDescription": "Wyciek uwolnił około 1,5 miliona baryłek ropy do Zatoki Perskiej, powodując poważne zniszczenia środowiska morskiego.",
+            "image": "https://via.placeholder.com/600x400?text=Nowruz+Oil+Field",
+            "latitude": 28.9167,
+            "longitude": 49.4167,
+            "impactScale": 8,
+            "oilSpilled": 1500000,
+            "remedialAction": "Zapory zostały użyte do powstrzymania wycieku i zapobieżenia jego rozprzestrzenianiu się. Skimmery i materiały sorpcyjne zostały użyte do odzyskania oleju z powierzchni wody."
+        },
+        {
+            "id": 4,
+            "name": "Atlantic Empress",
+            "location": "Morze Karaibskie",
+            "date": "1979-07-19",
+            "description": "Zderzenie dwóch supertankowców podczas burzy tropikalnej doprowadziło do pożaru i wycieku ropy.",
+            "impactDescription": "W katastrofie zginęło 26 marynarzy, a do oceanu wyciekło około 2,2 miliona baryłek ropy, co czyni to jednym z największych wycieków z tankowców w historii.",
+            "image": "https://via.placeholder.com/600x400?text=Atlantic+Empress",
+            "latitude": 11.5833,
+            "longitude": -62.5833,
+            "impactScale": 8,
+            "oilSpilled": 2200000,
+            "remedialAction": "Działania naprawcze podjęte w związku z wyciekiem ropy z Atlantic Empress obejmowały dużą operację gaszenia pożaru, a następnie zastosowanie środków dyspergujących w celu oczyszczenia plamy ropy. Płonący statek został odholowany na morze, a do akcji włączyły się różne statki i samoloty."
+        },
+        {
+            "id": 5,
+            "name": "Ixtoc I",
+            "location": "Zatoka Meksykańska",
+            "date": "1979-06-03",
+            "description": "Eksplozja na platformie wiertniczej Ixtoc I doprowadziła do niekontrolowanego wycieku ropy trwającego prawie 10 miesięcy.",
+            "impactDescription": "Około 3,3 miliona baryłek ropy wyciekło do Zatoki Meksykańskiej, powodując zniszczenia ekosystemów wybrzeża Meksyku i Teksasu.",
+            "image": "https://via.placeholder.com/600x400?text=Ixtoc+I",
+            "latitude": 19.4139,
+            "longitude": -92.3361,
+            "impactScale": 8,
+            "oilSpilled": 3300000,
+            "remedialAction": "Działania naprawcze podjęte w związku z wyciekiem ropy Ixtoc I obejmowały próby zamknięcia odwiertu, użycie środków dyspergujących i wywiercenie odwiertów odciążających. Zajęło to prawie 10 miesięcy i ostatecznie odwiert został zamknięty 23 marca 1980 r."
+        },
+        {
+            "id": 6,
+            "name": "Tanker Prestige",
+            "location": "Wybrzeże Galicji, Hiszpania",
+            "date": "2002-11-13",
+            "description": "Tankowiec Prestige złamał się na pół i zatonął, uwalniając ponad 77,000 ton ciężkiego oleju napędowego.",
+            "impactDescription": "Wyciek zanieczyszcił tysiące kilometrów linii brzegowej Hiszpanii, Portugalii i Francji, powodując ogromne straty w rybołówstwie i turystyce.",
+            "image": "https://via.placeholder.com/600x400?text=Tanker+Prestige",
+            "latitude": 42.8833,
+            "longitude": -9.7667,
+            "impactScale": 7,
+            "oilSpilled": 570000,
+            "remedialAction": "Początkowe działania koncentrowały się na odzyskiwaniu ropy naftowej z morza i lądu, natomiast późniejsze prace remediacyjne obejmowały bioremediację i długoterminowy monitoring dotkniętych obszarów."
+        }
+    ];
+}
+
+// Funkcja do zmiany strony
+function navigateTo(pageId) {
+    // Dodaj poprzednią stronę do historii
+    if (state.activePage !== pageId) {
+        state.navigationHistory.push(state.activePage);
+    }
+
+    // Aktualizuj aktywną stronę
+    state.activePage = pageId;
+
+    // Usuń aktywną klasę ze wszystkich linków
+    navLinks.forEach(link => {
+        link.classList.remove('active');
+    });
+
+    // Dodaj aktywną klasę do właściwego linku
+    const activeLink = document.querySelector(`.nav-link[href="#${pageId}"]`);
+    if (activeLink) {
+        activeLink.classList.add('active');
+    }
+
+    // Wyświetl loader
+    mainContent.innerHTML = `
+        <div class="loading-container d-flex justify-content-center align-items-center">
+            <div class="spinner-border text-primary" role="status">
+                <span class="visually-hidden">Ładowanie...</span>
+            </div>
+            <p class="ms-3">Ładowanie treści...</p>
+        </div>
+    `;
+
+    // Renderujemy stronę po krótkim opóźnieniu dla efektu ładowania
+    setTimeout(() => {
+        renderPage(pageId);
+    }, 300);
+}
+
+// Funkcja do renderowania odpowiedniej strony
+async function renderPage(pageId) {
+    switch (pageId) {
+        case 'home':
+            renderHome(mainContent);
+            break;
+        case 'arguments':
+            renderArguments(mainContent);
+            break;
+        case 'gallery':
+            const disasters = await loadDisasters();
+            renderGallery(mainContent, disasters);
+            break;
+        case 'stats':
+            const statsData = await loadDisasters();
+            renderStats(mainContent, statsData);
+            break;
+        case 'petition':
+            renderPetition(mainContent);
+            break;
+        case 'data':
+            renderPetitionDataManager(mainContent);
+            break;
+        default:
+            mainContent.innerHTML = '<div class="container mt-5"><h2>Strona nie znaleziona</h2><p>Przepraszamy, żądana strona nie istnieje.</p></div>';
+    }
+}
+
+// Obsługa zmiany URL (hashchange)
+window.addEventListener('hashchange', () => {
+    const hash = window.location.hash.substring(1) || 'home';
+    navigateTo(hash);
+});
+
+// Obsługa kliknięć na linki nawigacyjne
+navLinks.forEach(link => {
+    link.addEventListener('click', (e) => {
+        const pageId = e.currentTarget.getAttribute('href').substring(1);
+        navigateTo(pageId);
+    });
+});
+
+// Inicjalizacja aplikacji
+function initApp() {
+    const hash = window.location.hash.substring(1) || 'home';
+    navigateTo(hash);
+}
+
+// Uruchom aplikację po załadowaniu strony
+document.addEventListener('DOMContentLoaded', initApp);
